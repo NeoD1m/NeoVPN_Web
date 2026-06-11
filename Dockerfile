@@ -4,7 +4,8 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci
+# Schema is copied in builder; skip postinstall here to avoid prisma generate without schema
+RUN npm ci --ignore-scripts
 
 FROM base AS builder
 WORKDIR /app
