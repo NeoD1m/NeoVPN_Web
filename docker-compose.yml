@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
+    container_name: neovpn-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-neovpn}
@@ -20,16 +21,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: neovpn-web
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "${APP_HOST_PORT:-127.0.0.1:3000:3000}"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-neovpn}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-neovpn}?schema=public
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
-      APP_URL: ${APP_URL:-http://localhost}
+      APP_URL: ${APP_URL:-https://neo-vpn.com}
       NODE_ENV: production
       REMNAWAVE_API_URL: ${REMNAWAVE_API_URL:-}
       REMNAWAVE_API_KEY: ${REMNAWAVE_API_KEY:-}
@@ -39,11 +39,14 @@ services:
       - backup_data:/app/backups
     networks:
       - neovpn
+      - caddy
 
   migrate:
     build:
       context: .
       dockerfile: Dockerfile
+    profiles:
+      - migrate
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,22 +58,6 @@ services:
     networks:
       - neovpn
 
-  nginx:
-    image: nginx:alpine
-    restart: unless-stopped
-    ports:
-      - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./certbot/conf:/etc/letsencrypt:ro
-      - ./certbot/www:/var/www/certbot:ro
-    depends_on:
-      - app
-    networks:
-      - neovpn
-
 volumes:
   postgres_data:
   backup_data:
@@ -78,3 +65,6 @@ volumes:
 networks:
   neovpn:
     driver: bridge
+  caddy:
+    external: true
+    name: ${CADDY_NETWORK:?CADDY_NETWORK is required — Docker network shared with Caddy}

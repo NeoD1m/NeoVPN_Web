@@ -1,0 +1,26 @@
+# Caddy config snippet for NeoVPN portal
+#
+# Prerequisites:
+# 1. NeoVPN app container name: neovpn-web (port 3000 inside Docker)
+# 2. Caddy must be on the same Docker network as neovpn-web
+#    Set CADDY_NETWORK in NeoVPN .env to that network name
+#
+# Find Caddy's network (on the server):
+#   docker inspect caddy --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}'
+#   docker inspect remnawave --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}'
+
+https://neo-vpn.com {
+	reverse_proxy neovpn-web:3000
+}
+
+https://www.neo-vpn.com {
+	redir https://neo-vpn.com{uri}
+}
+
+# Your existing Remnawave blocks (unchanged):
+# https://panel.neo-vpn.com {
+# 	reverse_proxy remnawave:3000
+# }
+# https://sub.neo-vpn.com {
+# 	reverse_proxy remnawave-subscription-page:3010
+# }

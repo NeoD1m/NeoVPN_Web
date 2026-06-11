@@ -11,7 +11,7 @@ Production-ready VPN customer portal integrated with [Remnawave](https://remna.s
 - Full Remnawave API integration
 - Admin panel with user/code/settings management
 - PostgreSQL database with migrations
-- Docker deployment with Nginx reverse proxy
+- Docker deployment (Caddy or optional Nginx)
 - Security: Argon2id, CSRF, rate limiting, audit logs
 
 ## Quick Start (Docker)
@@ -23,14 +23,19 @@ cp .env.example .env
 # 2. Edit .env - set ENCRYPTION_KEY, POSTGRES_PASSWORD, etc.
 # Generate encryption key: openssl rand -hex 32
 
-# 3. Start services
+# 3. Set CADDY_NETWORK to the Docker network your Caddy container uses
+#    docker inspect caddy --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}'
+
+# 4. Start services (no bundled nginx — Caddy handles HTTPS)
 docker compose up -d postgres
-docker compose run --rm migrate
+docker compose --profile migrate run --rm migrate
 docker compose up -d
 
-# 4. Access
-# Website: http://localhost
-# Admin: http://localhost/admin/login
+# 5. Add to Caddyfile: reverse_proxy neovpn-web:3000  (see caddy/Caddyfile.example)
+
+# 6. Access
+# Website: https://neo-vpn.com
+# Admin: https://neo-vpn.com/admin/login
 # Default admin: admin / ChangeMeAdmin123!
 ```
 
