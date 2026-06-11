@@ -52,7 +52,7 @@ services:
   migrate:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.migrate
     profiles:
       - migrate
     depends_on:
@@ -62,7 +62,6 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-neovpn}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-neovpn}?schema=public
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ChangeMeAdmin123!}
-    command: sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts"
     networks:
       - neovpn
 

@@ -28,6 +28,7 @@ cp .env.example .env
 
 # 4. Start services (no bundled nginx — Caddy handles HTTPS)
 docker compose up -d postgres
+docker compose --profile migrate build migrate
 docker compose --profile migrate run --rm migrate
 docker compose up -d
 
