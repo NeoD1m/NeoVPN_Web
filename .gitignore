@@ -1,0 +1,10 @@
+node_modules
+.next
+.env
+.env.local
+.env.*.local
+backups
+certbot
+*.log
+.DS_Store
+Thumbs.db
