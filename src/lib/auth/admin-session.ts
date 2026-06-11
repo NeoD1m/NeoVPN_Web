@@ -1,4 +1,6 @@
 import { randomBytes } from "crypto";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "../prisma";
 import { verifyPassword } from "../password";
@@ -21,6 +23,46 @@ function generateSessionToken(): string {
   return randomBytes(48).toString("hex");
 }
 
+function getSessionCookieOptions(maxAge: number) {
+  return {
+    ...cookieDefaults(maxAge),
+    sameSite: "lax" as const,
+    path: "/",
+  };
+}
+
+/** Set admin session cookie on a NextResponse (preferred for login). */
+export function setAdminSessionCookie(
+  response: NextResponse,
+  token: string
+): void {
+  response.cookies.set(
+    ADMIN_SESSION_COOKIE,
+    token,
+    getSessionCookieOptions(SESSION_DURATION_MS / 1000)
+  );
+  // Remove legacy cookie that was scoped to /admin (broke /api/admin/* auth)
+  response.cookies.set(ADMIN_SESSION_COOKIE, "", {
+    ...cookieDefaults(0),
+    path: "/admin",
+    maxAge: 0,
+  });
+}
+
+/** Clear admin session cookies on a NextResponse. */
+export function clearAdminSessionCookies(response: NextResponse): void {
+  response.cookies.set(ADMIN_SESSION_COOKIE, "", {
+    ...cookieDefaults(0),
+    path: "/",
+    maxAge: 0,
+  });
+  response.cookies.set(ADMIN_SESSION_COOKIE, "", {
+    ...cookieDefaults(0),
+    path: "/admin",
+    maxAge: 0,
+  });
+}
+
 export async function createAdminSession(adminId: string): Promise<string> {
   const token = generateSessionToken();
   const expires = new Date(Date.now() + SESSION_DURATION_MS);
@@ -30,28 +72,30 @@ export async function createAdminSession(adminId: string): Promise<string> {
   });
 
   const cookieStore = await cookies();
-  cookieStore.set(ADMIN_SESSION_COOKIE, token, {
-    ...cookieDefaults(SESSION_DURATION_MS / 1000),
-    sameSite: "strict",
+  cookieStore.set(ADMIN_SESSION_COOKIE, token, getSessionCookieOptions(SESSION_DURATION_MS / 1000));
+  cookieStore.set(ADMIN_SESSION_COOKIE, "", {
+    ...cookieDefaults(0),
     path: "/admin",
+    maxAge: 0,
   });
 
   return token;
 }
 
-export async function destroyAdminSession(): Promise<void> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
-
-  if (token) {
-    await prisma.adminSession.deleteMany({ where: { sessionToken: token } });
-    cookieStore.delete(ADMIN_SESSION_COOKIE);
+function getTokenFromRequest(request?: NextRequest): string | undefined {
+  if (request) {
+    return request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
   }
+  return undefined;
 }
 
-export async function getSessionAdmin(): Promise<SessionAdmin | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
+export async function getSessionAdmin(
+  request?: NextRequest
+): Promise<SessionAdmin | null> {
+  const token =
+    getTokenFromRequest(request) ??
+    (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
+
   if (!token) return null;
 
   const session = await prisma.adminSession.findUnique({
@@ -75,12 +119,38 @@ export async function getSessionAdmin(): Promise<SessionAdmin | null> {
   };
 }
 
-export async function requireSessionAdmin(): Promise<SessionAdmin> {
-  const admin = await getSessionAdmin();
+export async function requireSessionAdmin(
+  request?: NextRequest
+): Promise<SessionAdmin> {
+  const admin = await getSessionAdmin(request);
   if (!admin) {
     throw new Error(messages.auth.unauthorized);
   }
   return admin;
+}
+
+export async function destroyAdminSession(
+  request?: NextRequest
+): Promise<void> {
+  const token =
+    getTokenFromRequest(request) ??
+    (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
+
+  if (token) {
+    await prisma.adminSession.deleteMany({ where: { sessionToken: token } });
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set(ADMIN_SESSION_COOKIE, "", {
+    ...cookieDefaults(0),
+    path: "/",
+    maxAge: 0,
+  });
+  cookieStore.set(ADMIN_SESSION_COOKIE, "", {
+    ...cookieDefaults(0),
+    path: "/admin",
+    maxAge: 0,
+  });
 }
 
 export async function authenticateAdmin(
@@ -132,6 +202,19 @@ export async function authenticateAdmin(
       role: admin.role,
     },
   };
+}
+
+export async function createAdminSessionToken(
+  adminId: string
+): Promise<string> {
+  const token = generateSessionToken();
+  const expires = new Date(Date.now() + SESSION_DURATION_MS);
+
+  await prisma.adminSession.create({
+    data: { sessionToken: token, adminId, expires },
+  });
+
+  return token;
 }
 
 export { ADMIN_SESSION_COOKIE };

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useCsrf } from "@/components/providers/csrf-provider";
+import { adminFetch } from "@/lib/admin-fetch";
 import { formatDate, formatDurationDays } from "@/lib/utils";
 
 const DURATION_PRESETS = [
@@ -52,7 +53,7 @@ export default function AdminCodesPage() {
     const params = new URLSearchParams();
     if (statusFilter) params.set("status", statusFilter);
     if (durationFilter) params.set("duration", durationFilter);
-    const res = await fetch(`/api/admin/codes?${params}`);
+    const res = await adminFetch(`/api/admin/codes?${params}`);
     if (res.status === 401) {
       router.push("/admin/login");
       return;

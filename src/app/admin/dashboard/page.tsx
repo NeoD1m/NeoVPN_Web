@@ -6,6 +6,7 @@ import { Users, Key, UserPlus, TrendingUp } from "lucide-react";
 import { AdminLayout } from "@/components/admin/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
+import { adminFetch } from "@/lib/admin-fetch";
 
 interface DashboardStats {
   stats: {
@@ -36,7 +37,7 @@ export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardStats | null>(null);
 
   useEffect(() => {
-    fetch("/api/admin/dashboard")
+    adminFetch("/api/admin/dashboard")
       .then((r) => {
         if (r.status === 401) {
           router.push("/admin/login");

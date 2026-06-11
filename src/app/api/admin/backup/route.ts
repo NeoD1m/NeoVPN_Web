@@ -13,7 +13,7 @@ const execFileAsync = promisify(execFile);
 
 export async function GET(request: NextRequest) {
   try {
-    await requireSessionAdmin();
+    await requireSessionAdmin(request);
 
     const { searchParams } = new URL(request.url);
     const action = searchParams.get("action");
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const admin = await requireSessionAdmin();
+    const admin = await requireSessionAdmin(request);
     if (!(await validateCsrf(request))) {
       return errorResponse(messages.auth.csrfInvalid, 403);
     }

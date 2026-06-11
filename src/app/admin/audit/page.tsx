@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AdminLayout } from "@/components/admin/admin-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
+import { adminFetch } from "@/lib/admin-fetch";
 
 interface AuditRow {
   id: string;
@@ -22,7 +23,7 @@ export default function AdminAuditPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/admin/audit")
+    adminFetch("/api/admin/audit")
       .then((r) => {
         if (r.status === 401) {
           router.push("/admin/login");

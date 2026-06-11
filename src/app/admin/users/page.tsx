@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useCsrf } from "@/components/providers/csrf-provider";
+import { adminFetch } from "@/lib/admin-fetch";
 import { formatDate } from "@/lib/utils";
 
 interface UserRow {
@@ -36,7 +37,7 @@ export default function AdminUsersPage() {
 
   const loadUsers = useCallback(async (q = search) => {
     setLoading(true);
-    const res = await fetch(`/api/admin/users?search=${encodeURIComponent(q)}`);
+    const res = await adminFetch(`/api/admin/users?search=${encodeURIComponent(q)}`);
     if (res.status === 401) {
       router.push("/admin/login");
       return;

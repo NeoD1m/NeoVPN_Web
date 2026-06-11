@@ -1,11 +1,12 @@
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSessionAdmin } from "@/lib/auth/admin-session";
 import { jsonResponse, errorResponse } from "@/lib/api-response";
 import { messages } from "@/lib/messages";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    await requireSessionAdmin();
+    await requireSessionAdmin(request);
 
     const now = new Date();
     const thirtyDaysAgo = new Date();

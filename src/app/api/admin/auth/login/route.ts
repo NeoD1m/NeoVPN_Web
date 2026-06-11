@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { adminLoginSchema } from "@/lib/validation";
 import {
   authenticateAdmin,
-  createAdminSession,
+  createAdminSessionToken,
+  setAdminSessionCookie,
 } from "@/lib/auth/admin-session";
 import { createAuditLog } from "@/lib/audit";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
       return errorResponse(result.error, 401);
     }
 
-    await createAdminSession(result.admin.id);
+    const token = await createAdminSessionToken(result.admin.id);
 
     await createAuditLog({
       actorType: "ADMIN",
@@ -53,10 +54,12 @@ export async function POST(request: NextRequest) {
       ipAddress: ip,
     });
 
-    return jsonResponse({
+    const response = jsonResponse({
       message: messages.admin.loginSuccess,
       admin: result.admin,
     });
+    setAdminSessionCookie(response, token);
+    return response;
   } catch {
     return errorResponse(messages.general.serverError, 500);
   }

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCsrf } from "@/components/providers/csrf-provider";
+import { adminFetch } from "@/lib/admin-fetch";
 
 export default function AdminSettingsPage() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/admin/settings")
+    adminFetch("/api/admin/settings")
       .then((r) => {
         if (r.status === 401) {
           router.push("/admin/login");

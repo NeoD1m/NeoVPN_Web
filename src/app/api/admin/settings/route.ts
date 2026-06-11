@@ -15,9 +15,9 @@ import {
 } from "@/lib/api-response";
 import { messages } from "@/lib/messages";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    await requireSessionAdmin();
+    await requireSessionAdmin(request);
     const config = await getRemnawaveConfigForAdmin();
     return jsonResponse({ settings: config });
   } catch {
@@ -27,7 +27,7 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const admin = await requireSessionAdmin();
+    const admin = await requireSessionAdmin(request);
     if (!(await validateCsrf(request))) {
       return errorResponse(messages.auth.csrfInvalid, 403);
     }
@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireSessionAdmin();
+    await requireSessionAdmin(request);
     if (!(await validateCsrf(request))) {
       return errorResponse(messages.auth.csrfInvalid, 403);
     }
