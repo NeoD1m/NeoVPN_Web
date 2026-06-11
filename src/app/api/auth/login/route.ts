@@ -59,7 +59,12 @@ export async function POST(request: NextRequest) {
       message: messages.auth.loginSuccess,
       user: result.user,
     });
-  } catch {
-    return errorResponse(messages.general.serverError, 500);
+  } catch (error) {
+    console.error("[login]", error);
+    const message =
+      error instanceof Error && error.message.includes("connect")
+        ? "Ошибка подключения к базе данных"
+        : messages.general.serverError;
+    return errorResponse(message, 500);
   }
 }

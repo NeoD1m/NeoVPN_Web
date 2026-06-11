@@ -4,6 +4,7 @@ import { prisma } from "../prisma";
 import { verifyPassword } from "../password";
 import { messages } from "../messages";
 import type { AdminRole } from "@prisma/client";
+import { cookieDefaults } from "../cookies";
 
 const ADMIN_SESSION_COOKIE = "neovpn_admin_session";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
@@ -30,11 +31,9 @@ export async function createAdminSession(adminId: string): Promise<string> {
 
   const cookieStore = await cookies();
   cookieStore.set(ADMIN_SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    ...cookieDefaults(SESSION_DURATION_MS / 1000),
     sameSite: "strict",
     path: "/admin",
-    maxAge: SESSION_DURATION_MS / 1000,
   });
 
   return token;

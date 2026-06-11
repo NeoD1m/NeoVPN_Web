@@ -120,7 +120,14 @@ export async function POST(request: NextRequest) {
       remnawaveCreated: Boolean(remnawaveUuid),
       subscriptionUrl,
     }, 201);
-  } catch {
-    return errorResponse(messages.general.serverError, 500);
+  } catch (error) {
+    console.error("[register]", error);
+    const message =
+      error instanceof Error && error.message.includes("ENCRYPTION_KEY")
+        ? "Ошибка конфигурации сервера (ENCRYPTION_KEY)"
+        : error instanceof Error && error.message.includes("connect")
+          ? "Ошибка подключения к базе данных"
+          : messages.general.serverError;
+    return errorResponse(message, 500);
   }
 }

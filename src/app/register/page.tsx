@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCsrf } from "@/components/providers/csrf-provider";
+import { useCsrf, parseApiError } from "@/components/providers/csrf-provider";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { apiFetch } = useCsrf();
+  const { apiFetch, csrfReady } = useCsrf();
   const [form, setForm] = useState({
     username: "",
     password: "",
@@ -24,6 +24,10 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!csrfReady) {
+      setError("Загрузка защиты формы... Попробуйте снова через секунду");
+      return;
+    }
     setError("");
     setLoading(true);
 
@@ -32,10 +36,9 @@ export default function RegisterPage() {
         method: "POST",
         body: JSON.stringify(form),
       });
-      const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error ?? "Ошибка регистрации");
+        setError(await parseApiError(res));
         return;
       }
 
@@ -76,7 +79,11 @@ export default function RegisterPage() {
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
                 required
                 autoComplete="username"
+                placeholder="latin letters, numbers, _ -"
               />
+              <p className="text-xs text-white/40">
+                Только латиница, цифры, _ и - (минимум 3 символа)
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Пароль *</Label>
@@ -111,8 +118,16 @@ export default function RegisterPage() {
                 }
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Регистрация..." : "Зарегистрироваться"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || !csrfReady}
+            >
+              {!csrfReady
+                ? "Загрузка..."
+                : loading
+                  ? "Регистрация..."
+                  : "Зарегистрироваться"}
             </Button>
           </form>
           <p className="mt-6 text-center text-sm text-white/50">

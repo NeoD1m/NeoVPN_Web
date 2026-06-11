@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCsrf } from "@/components/providers/csrf-provider";
+import { useCsrf, parseApiError } from "@/components/providers/csrf-provider";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { apiFetch } = useCsrf();
+  const { apiFetch, csrfReady } = useCsrf();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,6 +20,10 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!csrfReady) {
+      setError("Загрузка защиты формы... Попробуйте снова через секунду");
+      return;
+    }
     setError("");
     setLoading(true);
 
@@ -28,10 +32,9 @@ export default function LoginPage() {
         method: "POST",
         body: JSON.stringify({ username, password }),
       });
-      const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error ?? "Ошибка входа");
+        setError(await parseApiError(res));
         return;
       }
 
@@ -85,8 +88,12 @@ export default function LoginPage() {
                 autoComplete="current-password"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Вход..." : "Войти"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || !csrfReady}
+            >
+              {!csrfReady ? "Загрузка..." : loading ? "Вход..." : "Войти"}
             </Button>
           </form>
           <p className="mt-6 text-center text-sm text-white/50">

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { prisma } from "../prisma";
 import { verifyPassword } from "../password";
 import { messages } from "../messages";
+import { cookieDefaults } from "../cookies";
 
 const SESSION_COOKIE = "neovpn_session";
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -30,11 +31,7 @@ export async function createUserSession(userId: string): Promise<string> {
 
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: SESSION_DURATION_MS / 1000,
+    ...cookieDefaults(SESSION_DURATION_MS / 1000),
   });
 
   return token;

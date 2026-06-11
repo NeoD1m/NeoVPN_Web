@@ -1,29 +1,33 @@
 # Complete Caddyfile for neo-vpn.com stack
-# Copy to /opt/remnawave/caddy/Caddyfile on the server
-#
-# NeoVPN portal container: neovpn-web:3000
-# Must be on the same Docker network as Caddy (see CADDY_NETWORK in NeoVPN .env)
 
-# --- NeoVPN customer portal ---
 https://neo-vpn.com {
-	reverse_proxy neovpn-web:3000
+	reverse_proxy neovpn-web:3000 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+	}
 }
 
 https://www.neo-vpn.com {
 	redir https://neo-vpn.com{uri}
 }
 
-# --- Remnawave panel ---
 https://panel.neo-vpn.com {
-	reverse_proxy remnawave:3000
+	reverse_proxy remnawave:3000 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto {scheme}
+	}
 }
 
-# --- Remnawave subscription page ---
 https://sub.neo-vpn.com {
-	reverse_proxy remnawave-subscription-page:3010
+	reverse_proxy remnawave-subscription-page:3010 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto {scheme}
+	}
 }
 
-# --- Default HTTPS catch-all (internal TLS) ---
 :443 {
 	tls internal
 	respond 204

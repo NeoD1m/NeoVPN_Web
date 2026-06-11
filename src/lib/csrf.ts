@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { cookies } from "next/headers";
 import { CSRF_COOKIE, CSRF_HEADER } from "./csrf-constants";
+import { cookieDefaults } from "./cookies";
 
 export function generateCsrfToken(): string {
   return randomBytes(32).toString("hex");
@@ -9,11 +10,7 @@ export function generateCsrfToken(): string {
 export async function setCsrfCookie(token: string): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(CSRF_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/",
-    maxAge: 60 * 60 * 24,
+    ...cookieDefaults(60 * 60 * 24),
   });
 }
 
