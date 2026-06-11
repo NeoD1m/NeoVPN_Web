@@ -31,10 +31,18 @@ services:
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
       APP_URL: ${APP_URL:-https://neo-vpn.com}
       NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
       REMNAWAVE_API_URL: ${REMNAWAVE_API_URL:-}
       REMNAWAVE_API_KEY: ${REMNAWAVE_API_KEY:-}
       REMNAWAVE_SQUAD_NAME: ${REMNAWAVE_SQUAD_NAME:-MainSquad}
       BACKUP_DIR: /app/backups
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     volumes:
       - backup_data:/app/backups
     networks:
