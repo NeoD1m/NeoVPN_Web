@@ -1,0 +1,19 @@
+# Use this when port 80/443 is already taken by host nginx/caddy/apache.
+# Copy to docker-compose.override.yml or merge into your .env:
+#
+#   HTTP_PORT=8080
+#   HTTPS_PORT=8443
+#
+# Then open http://your-server:8080
+#
+# --- Recommended for production VPS with existing web server ---
+# Do NOT run the bundled nginx container. Proxy from host nginx to the app:
+#
+# 1. In .env set only app (no nginx ports needed):
+#    HTTP_PORT=8080
+#    HTTPS_PORT=8443
+#
+# 2. Or stop bundled nginx and use host reverse proxy:
+#    docker compose up -d postgres app
+#
+# 3. Host nginx site example (see nginx/host-reverse-proxy.conf.example)
