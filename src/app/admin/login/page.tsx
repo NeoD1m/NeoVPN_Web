@@ -1,17 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCsrf } from "@/components/providers/csrf-provider";
+import { useCsrf, parseApiError } from "@/components/providers/csrf-provider";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
-  const { apiFetch } = useCsrf();
+  const { apiFetch, csrfReady } = useCsrf();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -19,6 +17,10 @@ export default function AdminLoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!csrfReady) {
+      setError("Загрузка защиты формы... Попробуйте снова через секунду");
+      return;
+    }
     setError("");
     setLoading(true);
 
@@ -27,15 +29,14 @@ export default function AdminLoginPage() {
         method: "POST",
         body: JSON.stringify({ username, password }),
       });
-      const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error ?? "Ошибка входа");
+        setError(await parseApiError(res));
         return;
       }
 
-      router.push("/admin/dashboard");
-      router.refresh();
+      // Full page navigation ensures session cookie is sent to middleware
+      window.location.href = "/admin/dashboard";
     } catch {
       setError("Произошла ошибка. Попробуйте позже");
     } finally {
@@ -84,8 +85,8 @@ export default function AdminLoginPage() {
                 autoComplete="current-password"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Вход..." : "Войти"}
+            <Button type="submit" className="w-full" disabled={loading || !csrfReady}>
+              {!csrfReady ? "Загрузка..." : loading ? "Вход..." : "Войти"}
             </Button>
           </form>
         </CardContent>

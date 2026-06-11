@@ -82,41 +82,49 @@ export async function createAdminSession(adminId: string): Promise<string> {
   return token;
 }
 
-function getTokenFromRequest(request?: NextRequest): string | undefined {
-  if (request) {
-    return request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
-  }
-  return undefined;
+function getTokensFromRequest(request?: NextRequest): string[] {
+  if (!request) return [];
+  return request.cookies
+    .getAll(ADMIN_SESSION_COOKIE)
+    .map((c) => c.value)
+    .filter((v) => v.length > 0);
 }
 
 export async function getSessionAdmin(
   request?: NextRequest
 ): Promise<SessionAdmin | null> {
-  const token =
-    getTokenFromRequest(request) ??
-    (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
+  const candidates = [
+    ...getTokensFromRequest(request),
+    (await cookies()).get(ADMIN_SESSION_COOKIE)?.value,
+  ].filter((t): t is string => Boolean(t));
 
-  if (!token) return null;
+  const seen = new Set<string>();
+  for (const token of candidates) {
+    if (seen.has(token)) continue;
+    seen.add(token);
 
-  const session = await prisma.adminSession.findUnique({
-    where: { sessionToken: token },
-    include: { admin: true },
-  });
+    const session = await prisma.adminSession.findUnique({
+      where: { sessionToken: token },
+      include: { admin: true },
+    });
 
-  if (!session || session.expires < new Date()) {
-    if (session) {
-      await prisma.adminSession.delete({ where: { id: session.id } });
+    if (!session || session.expires < new Date()) {
+      if (session) {
+        await prisma.adminSession.delete({ where: { id: session.id } });
+      }
+      continue;
     }
-    return null;
+
+    if (!session.admin.isActive) continue;
+
+    return {
+      id: session.admin.id,
+      username: session.admin.username,
+      role: session.admin.role,
+    };
   }
 
-  if (!session.admin.isActive) return null;
-
-  return {
-    id: session.admin.id,
-    username: session.admin.username,
-    role: session.admin.role,
-  };
+  return null;
 }
 
 export async function requireSessionAdmin(
@@ -132,12 +140,15 @@ export async function requireSessionAdmin(
 export async function destroyAdminSession(
   request?: NextRequest
 ): Promise<void> {
-  const token =
-    getTokenFromRequest(request) ??
-    (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
+  const tokens = [
+    ...getTokensFromRequest(request),
+    (await cookies()).get(ADMIN_SESSION_COOKIE)?.value,
+  ].filter((t): t is string => Boolean(t));
 
-  if (token) {
-    await prisma.adminSession.deleteMany({ where: { sessionToken: token } });
+  if (tokens.length > 0) {
+    await prisma.adminSession.deleteMany({
+      where: { sessionToken: { in: [...new Set(tokens)] } },
+    });
   }
 
   const cookieStore = await cookies();

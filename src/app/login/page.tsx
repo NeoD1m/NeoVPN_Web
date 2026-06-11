@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useCsrf, parseApiError } from "@/components/providers/csrf-provider";
 
 export default function LoginPage() {
-  const router = useRouter();
   const { apiFetch, csrfReady } = useCsrf();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -38,8 +36,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/dashboard");
-      router.refresh();
+      window.location.href = "/dashboard";
     } catch {
       setError("Произошла ошибка. Попробуйте позже");
     } finally {
